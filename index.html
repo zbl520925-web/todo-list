@@ -91,6 +91,11 @@
       transition: border-color 0.2s ease, box-shadow 0.2s ease;
     }
 
+    .composer .date-input {
+      flex: 0 0 170px;
+      color: var(--text);
+    }
+
     .composer input:focus {
       border-color: rgba(91, 103, 241, 0.55);
       box-shadow: 0 0 0 4px rgba(91, 103, 241, 0.1);
@@ -208,11 +213,32 @@
     }
 
     .todo-text {
-      flex: 1;
       min-width: 0;
       font-size: 15px;
       line-height: 1.5;
       overflow-wrap: anywhere;
+    }
+
+    .todo-content {
+      flex: 1;
+      min-width: 0;
+      display: grid;
+      gap: 4px;
+    }
+
+    .due-date {
+      width: fit-content;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .due-date.today {
+      color: #b7791f;
+    }
+
+    .due-date.overdue {
+      color: var(--danger);
     }
 
     .todo-item.completed .todo-text {
@@ -290,6 +316,11 @@
         flex-direction: column;
       }
 
+      .composer .date-input {
+        flex-basis: auto;
+        width: 100%;
+      }
+
       .add-btn {
         min-height: 48px;
       }
@@ -323,6 +354,13 @@
         autocomplete="off"
         aria-label="新任务"
       />
+      <input
+        class="date-input"
+        id="dueDateInput"
+        type="date"
+        aria-label="截至日期"
+        title="截至日期（可选）"
+      />
       <button class="add-btn" type="submit">添加任务</button>
     </form>
 
@@ -354,6 +392,7 @@
 
     const form = document.getElementById("todoForm");
     const input = document.getElementById("todoInput");
+    const dueDateInput = document.getElementById("dueDateInput");
     const list = document.getElementById("todoList");
     const emptyState = document.getElementById("emptyState");
     const emptyText = document.getElementById("emptyText");
@@ -382,11 +421,12 @@
       return `${Date.now()}-${Math.random().toString(16).slice(2)}`;
     }
 
-    function addTodo(text) {
+    function addTodo(text, dueDate) {
       todos.unshift({
         id: makeId(),
         text,
         completed: false,
+        dueDate,
         createdAt: Date.now()
       });
       saveTodos();
@@ -413,6 +453,34 @@
       return todos;
     }
 
+    function getTodayKey() {
+      const now = new Date();
+      const year = now.getFullYear();
+      const month = String(now.getMonth() + 1).padStart(2, "0");
+      const day = String(now.getDate()).padStart(2, "0");
+      return `${year}-${month}-${day}`;
+    }
+
+    function formatDueDate(dateKey, completed) {
+      if (!dateKey) return null;
+
+      const [year, month, day] = dateKey.split("-").map(Number);
+      const label = new Intl.DateTimeFormat("zh-CN", {
+        month: "long",
+        day: "numeric",
+        weekday: "short"
+      }).format(new Date(year, month - 1, day));
+      const today = getTodayKey();
+
+      if (!completed && dateKey < today) {
+        return { text: `已逾期 · ${label}`, status: "overdue" };
+      }
+      if (!completed && dateKey === today) {
+        return { text: `今天到期 · ${label}`, status: "today" };
+      }
+      return { text: `截至 ${label}`, status: "" };
+    }
+
     function render() {
       list.innerHTML = "";
       const visibleTodos = getVisibleTodos();
@@ -428,9 +496,21 @@
         checkbox.setAttribute("aria-label", `标记任务：${todo.text}`);
         checkbox.addEventListener("change", () => toggleTodo(todo.id));
 
+        const content = document.createElement("div");
+        content.className = "todo-content";
+
         const text = document.createElement("span");
         text.className = "todo-text";
         text.textContent = todo.text;
+        content.appendChild(text);
+
+        const due = formatDueDate(todo.dueDate, todo.completed);
+        if (due) {
+          const dueLabel = document.createElement("span");
+          dueLabel.className = `due-date${due.status ? ` ${due.status}` : ""}`;
+          dueLabel.textContent = due.text;
+          content.appendChild(dueLabel);
+        }
 
         const deleteButton = document.createElement("button");
         deleteButton.type = "button";
@@ -439,7 +519,7 @@
         deleteButton.setAttribute("aria-label", `删除任务：${todo.text}`);
         deleteButton.addEventListener("click", () => deleteTodo(todo.id));
 
-        item.append(checkbox, text, deleteButton);
+        item.append(checkbox, content, deleteButton);
         list.appendChild(item);
       });
 
@@ -470,8 +550,9 @@
         return;
       }
 
-      addTodo(value);
+      addTodo(value, dueDateInput.value);
       input.value = "";
+      dueDateInput.value = "";
       input.focus();
     });
 
