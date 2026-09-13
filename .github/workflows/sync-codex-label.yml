@@ -1,0 +1,38 @@
+name: Sync Codex task label
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - .github/workflows/sync-codex-label.yml
+  workflow_dispatch:
+
+permissions:
+  issues: write
+
+jobs:
+  sync-label:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Create or update codex-ready label
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            const label = {
+              owner,
+              repo,
+              name: "codex-ready",
+              color: "6f42c1",
+              description: "需求已整理，可以交给 Codex 实现"
+            };
+
+            try {
+              await github.rest.issues.updateLabel(label);
+            } catch (error) {
+              if (error.status !== 404) throw error;
+              await github.rest.issues.createLabel(label);
+            }
+

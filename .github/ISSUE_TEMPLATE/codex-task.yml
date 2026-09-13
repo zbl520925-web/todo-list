@@ -1,0 +1,47 @@
+name: Codex 开发任务
+description: 让 ChatGPT 整理需求，再交给 Codex 实现并推送
+title: "[Codex] "
+labels:
+  - codex-ready
+body:
+  - type: markdown
+    attributes:
+      value: |
+        请保持内容简短、明确。Codex 会读取仓库代码，不需要在这里粘贴代码。
+
+  - type: textarea
+    id: goal
+    attributes:
+      label: 功能目标
+      description: 用一两句话说明用户最终能做什么。
+      placeholder: 例如：创建任务时可以选择高、中、低优先级。
+    validations:
+      required: true
+
+  - type: textarea
+    id: behavior
+    attributes:
+      label: 交互方式
+      description: 说明入口、操作过程和页面反馈。
+      placeholder: 例如：添加任务时选择优先级，任务列表用颜色标签显示。
+    validations:
+      required: true
+
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: 验收标准
+      description: 每行写一条可以实际检查的结果。
+      placeholder: |
+        - 可以选择高、中、低三级
+        - 刷新网页后优先级仍然保留
+        - 手机页面正常显示
+    validations:
+      required: true
+
+  - type: textarea
+    id: constraints
+    attributes:
+      label: 限制或补充
+      description: 可选。填写不能改动的内容、参考样式或其他要求。
+
